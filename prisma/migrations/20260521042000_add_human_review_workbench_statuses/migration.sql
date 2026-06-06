@@ -1,0 +1,2 @@
+-- SQLite stores Prisma enum values as text, so no table rewrite is needed for
+-- adding RETURNED / ESCALATED workflow states.

@@ -1,0 +1,2 @@
+-- SQLite stores Prisma enums as TEXT, so no table change is required.
+-- This migration documents adding OPENAI_JSONL to ExportFormat in Prisma schema.

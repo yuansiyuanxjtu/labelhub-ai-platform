@@ -1,0 +1,295 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String        @id @default(cuid())
+  name                String
+  email               String        @unique
+  role                UserRole      @default(ANNOTATOR)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  ownedProjects       Project[]     @relation("ProjectOwner")
+  ownedTasks          Task[]        @relation("TaskOwner")
+  assignedSamples     Sample[]      @relation("SampleAssignee")
+  annotations         Annotation[]  @relation("AnnotationAnnotator")
+  humanReviews        HumanReview[] @relation("HumanReviewReviewer")
+  createdExportJobs   ExportJob[]   @relation("ExportJobCreator")
+  auditLogs           AuditLog[]    @relation("AuditLogActor")
+  createdSchemaVersions FormSchemaVersion[] @relation("FormSchemaVersionCreator")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String
+  status      ProjectStatus @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id])
+  tasks       Task[]
+
+  @@index([ownerId])
+}
+
+model Task {
+  id           String       @id @default(cuid())
+  projectId    String
+  ownerId      String
+  name         String
+  description  String       @default("")
+  type         TaskType     @default(QA_QUALITY)
+  instruction  String
+  formSchema   String
+  currentFormSchemaVersionId String?
+  reviewRubric String
+  status       TaskStatus   @default(DRAFT)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  project      Project      @relation(fields: [projectId], references: [id])
+  owner        User         @relation("TaskOwner", fields: [ownerId], references: [id])
+  samples      Sample[]
+  annotations  Annotation[]
+  exportJobs   ExportJob[]
+  formSchemaVersions FormSchemaVersion[]
+  currentFormSchemaVersion FormSchemaVersion? @relation("TaskCurrentFormSchemaVersion", fields: [currentFormSchemaVersionId], references: [id])
+
+  @@index([projectId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([currentFormSchemaVersionId])
+}
+
+model Sample {
+  id           String       @id @default(cuid())
+  taskId       String
+  externalId   String?
+  rawData      String
+  status       SampleStatus @default(PENDING)
+  assignedToId String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  task         Task         @relation(fields: [taskId], references: [id])
+  assignedTo   User?        @relation("SampleAssignee", fields: [assignedToId], references: [id])
+  annotations  Annotation[]
+
+  @@unique([taskId, externalId])
+  @@index([taskId])
+  @@index([assignedToId])
+  @@index([status])
+}
+
+model Annotation {
+  id             String           @id @default(cuid())
+  taskId         String
+  sampleId       String
+  annotatorId    String
+  formSchemaVersionId String?
+  annotationData String
+  status         AnnotationStatus @default(SUBMITTED)
+  submittedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  task           Task             @relation(fields: [taskId], references: [id])
+  sample         Sample           @relation(fields: [sampleId], references: [id])
+  annotator      User             @relation("AnnotationAnnotator", fields: [annotatorId], references: [id])
+  formSchemaVersion FormSchemaVersion? @relation(fields: [formSchemaVersionId], references: [id])
+  aiReview       AiReview?
+  humanReviews   HumanReview[]
+
+  @@index([taskId])
+  @@index([sampleId])
+  @@index([annotatorId])
+  @@index([formSchemaVersionId])
+  @@index([status])
+  @@unique([sampleId, annotatorId])
+}
+
+model FormSchemaVersion {
+  id          String   @id @default(cuid())
+  taskId      String
+  version     Int
+  schema      String
+  createdById String
+  createdAt   DateTime @default(now())
+  changeNote  String?
+  task        Task     @relation(fields: [taskId], references: [id])
+  createdBy   User     @relation("FormSchemaVersionCreator", fields: [createdById], references: [id])
+  currentForTasks Task[] @relation("TaskCurrentFormSchemaVersion")
+  annotations Annotation[]
+
+  @@unique([taskId, version])
+  @@index([taskId])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model AiReview {
+  id           String    @id @default(cuid())
+  annotationId String    @unique
+  score        Float
+  riskLevel    RiskLevel @default(LOW)
+  issues       String
+  suggestion   String?
+  comment      String?
+  confidence   Float     @default(0)
+  rubricEvidence String    @default("[]")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  annotation   Annotation @relation(fields: [annotationId], references: [id])
+
+  @@index([riskLevel])
+}
+
+model HumanReview {
+  id           String         @id @default(cuid())
+  annotationId String
+  reviewerId   String
+  decision     ReviewDecision
+  comment      String?
+  reviewedAt   DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  annotation   Annotation     @relation(fields: [annotationId], references: [id])
+  reviewer     User           @relation("HumanReviewReviewer", fields: [reviewerId], references: [id])
+
+  @@index([annotationId])
+  @@index([reviewerId])
+  @@index([decision])
+}
+
+model ExportJob {
+  id          String      @id @default(cuid())
+  taskId      String
+  createdById String
+  name        String
+  format      ExportFormat
+  status      ExportStatus @default(PENDING)
+  filterJson  String?
+  fileUrl     String?
+  rowCount    Int         @default(0)
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  task        Task        @relation(fields: [taskId], references: [id])
+  createdBy   User        @relation("ExportJobCreator", fields: [createdById], references: [id])
+
+  @@index([taskId])
+  @@index([createdById])
+  @@index([status])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  actorName   String?
+  action      String
+  entityType  String
+  entityId    String
+  beforeState String?
+  afterState  String?
+  metadata    String?
+  createdAt   DateTime @default(now())
+  actor       User?    @relation("AuditLogActor", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+enum UserRole {
+  OWNER
+  ANNOTATOR
+  REVIEWER
+  ADMIN
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum TaskType {
+  QA_QUALITY
+  CLASSIFICATION
+  PREFERENCE
+  EXTRACTION
+  RUBRIC_SCORING
+}
+
+enum TaskStatus {
+  DRAFT
+  SAMPLING
+  ASSIGNING
+  ANNOTATING
+  AI_REVIEWING
+  HUMAN_REVIEWING
+  READY_TO_EXPORT
+  EXPORTED
+  ARCHIVED
+}
+
+enum SampleStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  SUBMITTED
+  AI_REVIEWING
+  AI_REVIEWED
+  HUMAN_REVIEWING
+  APPROVED
+  RETURNED
+  ESCALATED
+  EXPORTED
+}
+
+enum AnnotationStatus {
+  DRAFT
+  SUBMITTED
+  AI_REVIEWED
+  NEEDS_HUMAN_REVIEW
+  APPROVED
+  RETURNED
+  ESCALATED
+  REJECTED
+  EXPORTED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ReviewDecision {
+  APPROVED
+  RETURNED
+  ESCALATED
+  APPROVE
+  REJECT
+  REQUEST_CHANGES
+}
+
+enum ExportFormat {
+  JSON
+  JSONL
+  CSV
+  OPENAI_JSONL
+  PARQUET
+}
+
+enum ExportStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}

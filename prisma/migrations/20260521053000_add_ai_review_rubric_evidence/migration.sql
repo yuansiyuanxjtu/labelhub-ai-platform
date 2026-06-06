@@ -1,0 +1,1 @@
+ALTER TABLE "AiReview" ADD COLUMN "rubricEvidence" TEXT NOT NULL DEFAULT '[]';
