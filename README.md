@@ -239,9 +239,9 @@ npm run typecheck
 npm run test
 ```
 
-## Demo 演示路径
+## Demo 演示流程
 
-推荐比赛答辩顺序：
+以下流程覆盖任务负责人、标注员、审核员三类角色的完整数据生产链路：
 
 1. `/dashboard`：查看数据生产质量看板。
 2. `/demo`：Reset demo data，生成三类演示任务。
