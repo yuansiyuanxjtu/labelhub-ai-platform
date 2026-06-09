@@ -14,9 +14,9 @@
 
 ## 视频内容要求
 
-建议时长：约 5 分钟左右。
+视频时长：约 5 分钟左右。
 
-视频建议包含：
+视频内容包含：
 
 1. Dashboard 质量看板概览。
 2. Demo Mode 重置数据与角色切换。
@@ -27,6 +27,4 @@
 7. 数据导出页面预览并下载 JSONL 或 OpenAI JSONL。
 8. 简要讲解状态机、AuditLog、formSchema versioning 和 mock RBAC。
 
-## 截图补充
 
-正式提交前，请将关键页面截图放入 `submission/images/`，并在相关文档中引用。
