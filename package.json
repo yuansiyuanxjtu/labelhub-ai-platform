@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit --incremental false",
     "prisma:generate": "PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_CLI_QUERY_ENGINE_TYPE=binary prisma generate",
     "prisma:migrate": "PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_CLI_QUERY_ENGINE_TYPE=binary prisma migrate dev",
-    "prisma:seed": "PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_CLI_QUERY_ENGINE_TYPE=binary prisma db seed"
+    "prisma:migrate:deploy": "PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_CLI_QUERY_ENGINE_TYPE=binary prisma migrate deploy",
+    "prisma:seed": "PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_CLI_QUERY_ENGINE_TYPE=binary prisma db seed",
+    "db:seed": "npm run prisma:seed"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

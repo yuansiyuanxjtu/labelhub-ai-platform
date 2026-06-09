@@ -1,0 +1,314 @@
+{
+  "info": {
+    "name": "LabelHub API",
+    "description": "Postman Collection generated from the real app/api routes in the current LabelHub codebase.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "taskId",
+      "value": "replace_with_task_id"
+    },
+    {
+      "key": "sampleId",
+      "value": "replace_with_sample_id"
+    },
+    {
+      "key": "annotationId",
+      "value": "replace_with_annotation_id"
+    }
+  ],
+  "item": [
+    {
+      "name": "Task",
+      "item": [
+        {
+          "name": "Get Tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks"]
+            }
+          }
+        },
+        {
+          "name": "Create Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"LLM 回答质量评估\",\n  \"description\": \"用于评估模型回答质量\",\n  \"instruction\": \"请阅读样本并按 rubric 完成标注。\",\n  \"reviewRubric\": \"{\\\"rules\\\":[\\\"准确性\\\",\\\"完整性\\\",\\\"表达质量\\\"]}\",\n  \"formSchema\": \"{\\\"fields\\\":[{\\\"id\\\":\\\"quality_score\\\",\\\"label\\\":\\\"质量评分\\\",\\\"type\\\":\\\"rating\\\",\\\"required\\\":true,\\\"min\\\":1,\\\"max\\\":5}]}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks"]
+            }
+          }
+        },
+        {
+          "name": "Get Task Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{taskId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Task Form Schema",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formSchema\": \"{\\\"fields\\\":[{\\\"id\\\":\\\"quality_score\\\",\\\"label\\\":\\\"质量评分\\\",\\\"type\\\":\\\"rating\\\",\\\"required\\\":true,\\\"min\\\":1,\\\"max\\\":5}]}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{taskId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sample",
+      "item": [
+        {
+          "name": "Get Assigned Samples",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/annotate/samples",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "annotate", "samples"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Annotation",
+      "item": [
+        {
+          "name": "Save Draft Or Submit Annotation",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"annotationData\": {\n    \"quality_score\": 5,\n    \"risk_level\": \"LOW\",\n    \"review_note\": \"回答质量良好，满足任务标准。\"\n  },\n  \"action\": \"submit\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/annotate/samples/{{sampleId}}/annotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "annotate", "samples", "{{sampleId}}", "annotation"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Review",
+      "item": [
+        {
+          "name": "Run QualityGuard AI Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/annotations/{{annotationId}}/ai-review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "annotations", "{{annotationId}}", "ai-review"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Human Review",
+      "item": [
+        {
+          "name": "Get Review Queue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "review"]
+            }
+          }
+        },
+        {
+          "name": "Submit Human Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"APPROVED\",\n  \"comment\": \"审核通过，标注结果满足任务标准。\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/review/{{annotationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "review", "{{annotationId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Export",
+      "item": [
+        {
+          "name": "Get Export Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/exports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "exports"]
+            }
+          }
+        },
+        {
+          "name": "Preview Or Create Export",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskId\": \"{{taskId}}\",\n  \"format\": \"OPENAI_JSONL\",\n  \"includeAiReview\": true,\n  \"includeHumanReview\": true,\n  \"includeTaskMetadata\": true,\n  \"mode\": \"preview\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/exports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "exports"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Demo",
+      "item": [
+        {
+          "name": "Get Dashboard Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Reset Demo Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/demo/reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "demo", "reset"]
+            }
+          }
+        },
+        {
+          "name": "Get Current Mock User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Switch Mock Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"REVIEWER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "role"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

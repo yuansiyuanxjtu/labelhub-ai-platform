@@ -60,6 +60,8 @@ export function AiReviewPanel({
   const scorePercent = Math.round(aiReview.score * 100);
   const confidencePercent = Math.round(aiReview.confidence * 100);
   const shouldPromptComment = aiReview.riskLevel === "HIGH" && comment.trim().length === 0;
+  const alreadyReviewed = Boolean(latestReview);
+  const actionDisabled = submitting || canSubmit === false || alreadyReviewed;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -184,13 +186,13 @@ export function AiReviewPanel({
 
       <div className="border-t bg-card p-4">
         <div className="grid gap-2">
-          <Button disabled={submitting || canSubmit === false} onClick={() => onSubmit("APPROVED")}>
+          <Button disabled={actionDisabled} onClick={() => onSubmit("APPROVED")}>
             <CheckCircle2 className="h-4 w-4" />
             通过
           </Button>
           <Button
             variant="destructive"
-            disabled={submitting || canSubmit === false}
+            disabled={actionDisabled}
             onClick={() => onSubmit("RETURNED")}
           >
             <RotateCcw className="h-4 w-4" />
@@ -198,12 +200,19 @@ export function AiReviewPanel({
           </Button>
           <Button
             variant="outline"
-            disabled={submitting || canSubmit === false}
+            disabled={actionDisabled}
             onClick={() => onSubmit("ESCALATED")}
           >
             <GitBranch className="h-4 w-4" />
             提交仲裁
           </Button>
+          {alreadyReviewed ? (
+            <p className="text-xs leading-5 text-muted-foreground">
+              该样本已完成最终审核，当前决策为
+              {formatDecision(latestReview?.decision)}。如需重新演示审核，请选择未终审样本或重置
+              Demo 数据。
+            </p>
+          ) : null}
           {canSubmit === false ? (
             <p className="text-xs text-muted-foreground">当前角色无人工审核提交权限。</p>
           ) : null}

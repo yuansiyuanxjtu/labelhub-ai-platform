@@ -9,10 +9,20 @@ export async function POST() {
   if (!can(user.role, "demo:reset")) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
-  const result = await resetDemoData(prisma);
+  try {
+    const result = await resetDemoData(prisma);
 
-  return NextResponse.json({
-    message: "Demo data reset",
-    ...result,
-  });
+    return NextResponse.json({
+      message: "Demo data reset",
+      ...result,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        message: "Demo data reset failed",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
+  }
 }

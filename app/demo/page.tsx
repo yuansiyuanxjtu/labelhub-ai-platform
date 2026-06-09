@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DatabaseZap, Play, RotateCcw, ShieldCheck, Tags } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { can } from "@/lib/auth/permissions";
+import { notifyCurrentUserChanged, useCurrentUser } from "@/hooks/useCurrentUser";
+import { can, roleLabelMap, roleShortLabelMap } from "@/lib/auth/permissions";
 import type { AppRole } from "@/lib/auth/permissions";
 
 export default function DemoPage() {
@@ -15,18 +16,7 @@ export default function DemoPage() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [firstTaskId, setFirstTaskId] = useState("");
-  const [role, setRole] = useState<AppRole>("ADMIN");
-
-  useEffect(() => {
-    void fetch("/api/auth/me", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((data: { user?: { role?: AppRole } }) => {
-        if (data.user?.role) {
-          setRole(data.user.role);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const { role } = useCurrentUser();
 
   async function switchRole(nextRole: AppRole) {
     setError("");
@@ -39,11 +29,20 @@ export default function DemoPage() {
       if (!response.ok) {
         throw new Error("角色切换失败");
       }
-      setRole(nextRole);
-      setNotice(`已切换为 ${nextRole}`);
+      notifyCurrentUserChanged(nextRole);
+      setNotice(`已切换为 ${roleLabelMap[nextRole]} / ${roleShortLabelMap[nextRole]}`);
       router.refresh();
+      return true;
     } catch (switchError) {
       setError(switchError instanceof Error ? switchError.message : "角色切换失败");
+      return false;
+    }
+  }
+
+  async function startAs(nextRole: AppRole, href: string) {
+    const switched = await switchRole(nextRole);
+    if (switched) {
+      router.push(href);
     }
   }
 
@@ -139,11 +138,9 @@ export default function DemoPage() {
           description="进入标注员工作台，体验样本数据和 schema 驱动表单。"
           icon={Tags}
         >
-          <Button asChild variant="outline">
-            <Link href="/annotate">
-              <Tags className="h-4 w-4" />
-              Start as Annotator
-            </Link>
+          <Button variant="outline" onClick={() => void startAs("ANNOTATOR", "/annotate")}>
+            <Tags className="h-4 w-4" />
+            Start as Annotator
           </Button>
         </ActionCard>
 
@@ -152,11 +149,9 @@ export default function DemoPage() {
           description="进入人工审核工作台，查看 AI 预审证据并做审核决策。"
           icon={ShieldCheck}
         >
-          <Button asChild variant="outline">
-            <Link href="/review">
-              <ShieldCheck className="h-4 w-4" />
-              Start as Reviewer
-            </Link>
+          <Button variant="outline" onClick={() => void startAs("REVIEWER", "/review")}>
+            <ShieldCheck className="h-4 w-4" />
+            Start as Reviewer
           </Button>
         </ActionCard>
       </section>

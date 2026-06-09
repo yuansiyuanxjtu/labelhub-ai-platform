@@ -1,24 +1,13 @@
  "use client";
 
 import { Bell, Search, Settings } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { AppRole } from "@/lib/auth/permissions";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { roleLabelMap, roleShortLabelMap } from "@/lib/auth/permissions";
 
 export function TopNav() {
-  const [role, setRole] = useState<AppRole>("ADMIN");
-
-  useEffect(() => {
-    void fetch("/api/auth/me", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((data: { user?: { role?: AppRole } }) => {
-        if (data.user?.role) {
-          setRole(data.user.role);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const { role } = useCurrentUser();
 
   return (
     <header className="sticky top-0 z-20 border-b bg-card/95 backdrop-blur">
@@ -36,15 +25,14 @@ export function TopNav() {
         <Button variant="outline" size="icon" aria-label="设置">
           <Settings className="h-4 w-4" />
         </Button>
-        <div className="hidden h-9 items-center rounded-md border px-3 text-sm font-medium sm:flex">
-          {formatRole(role)}
+        <div
+          className="hidden h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium sm:flex"
+          title={`${roleLabelMap[role]} / ${roleShortLabelMap[role]}`}
+        >
+          <span className="hidden text-muted-foreground xl:inline">{roleLabelMap[role]}</span>
+          <span>{roleShortLabelMap[role]}</span>
         </div>
       </div>
     </header>
   );
-}
-
-function formatRole(role: AppRole) {
-  if (role === "TASK_OWNER") return "Task Owner";
-  return role;
 }

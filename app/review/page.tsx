@@ -12,6 +12,23 @@ import { Progress } from "@/components/ui/progress";
 import { type AppRole } from "@/lib/auth/permissions";
 
 type ReviewDecision = "APPROVED" | "RETURNED" | "ESCALATED";
+type HumanReviewSubmitData = {
+  annotation: { id: string; status: string; updatedAt: string };
+  sample: { id: string; status: string; updatedAt: string };
+  humanReview: ReviewItem["humanReview"];
+};
+type HumanReviewSubmitResponse =
+  | {
+      ok: true;
+      data: HumanReviewSubmitData;
+    }
+  | {
+      ok: false;
+      error?: {
+        message?: string;
+      };
+    }
+  | (Partial<HumanReviewSubmitData> & { message?: string });
 
 export default function ReviewPage() {
   const [items, setItems] = useState<ReviewItem[]>([]);
@@ -55,7 +72,7 @@ export default function ReviewPage() {
 
       const data = (await response.json()) as { items: ReviewItem[] };
       setItems(data.items);
-      setCurrentId((current) => current || data.items[0]?.id || "");
+      setCurrentId((current) => current || findFirstReviewableItem(data.items)?.id || data.items[0]?.id || "");
       setError("");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "审核队列加载失败");
@@ -86,6 +103,12 @@ export default function ReviewPage() {
       return;
     }
 
+    if (currentItem.humanReview) {
+      setError("");
+      setNotice(`该样本已完成最终审核：${formatDecision(currentItem.humanReview.decision)}。`);
+      return;
+    }
+
     setSubmitting(true);
     setError("");
     setNotice("");
@@ -96,39 +119,33 @@ export default function ReviewPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ decision, comment }),
       });
-      const data = (await response.json()) as {
-        annotation?: { id: string; status: string; updatedAt: string };
-        sample?: { id: string; status: string; updatedAt: string };
-        humanReview?: ReviewItem["humanReview"];
-        message?: string;
-      };
+      const payload = (await response.json()) as HumanReviewSubmitResponse;
+      const data = unwrapHumanReviewSubmitResponse(payload);
 
-      if (!response.ok) {
-        throw new Error(data.message ?? "人工审核提交失败");
+      if (!response.ok || !data) {
+        throw new Error(getSubmitErrorMessage(payload));
       }
 
-      if (data.annotation && data.sample && data.humanReview) {
-        const nextAnnotation = data.annotation;
-        const nextSample = data.sample;
-        const nextHumanReview = data.humanReview;
+      const nextAnnotation = data.annotation;
+      const nextSample = data.sample;
+      const nextHumanReview = data.humanReview;
 
-        setItems((current) =>
-          current.map((item) =>
-            item.id === nextAnnotation.id
-              ? {
-                  ...item,
-                  status: nextAnnotation.status,
-                  updatedAt: nextAnnotation.updatedAt,
-                  sample: {
-                    ...item.sample,
-                    status: nextSample.status,
-                  },
-                  humanReview: nextHumanReview,
-                }
-              : item,
-          ),
-        );
-      }
+      setItems((current) =>
+        current.map((item) =>
+          item.id === nextAnnotation.id
+            ? {
+                ...item,
+                status: nextAnnotation.status,
+                updatedAt: nextAnnotation.updatedAt,
+                sample: {
+                  ...item.sample,
+                  status: nextSample.status,
+                },
+                humanReview: nextHumanReview,
+              }
+            : item,
+        ),
+      );
 
       setNotice(`人工审核已提交：${formatDecision(decision)}`);
     } catch (submitError) {
@@ -193,4 +210,42 @@ function formatDecision(decision?: ReviewDecision | null) {
   if (decision === "RETURNED") return "已退回";
   if (decision === "ESCALATED") return "需仲裁";
   return "待审核";
+}
+
+function findFirstReviewableItem(items: ReviewItem[]) {
+  return items.find(
+    (item) =>
+      !item.humanReview &&
+      (item.sample.status === "AI_REVIEWED" || item.sample.status === "HUMAN_REVIEWING"),
+  );
+}
+
+function unwrapHumanReviewSubmitResponse(
+  payload: HumanReviewSubmitResponse,
+): HumanReviewSubmitData | null {
+  if ("ok" in payload) {
+    return payload.ok ? payload.data : null;
+  }
+
+  if (payload.annotation && payload.sample && payload.humanReview) {
+    return {
+      annotation: payload.annotation,
+      sample: payload.sample,
+      humanReview: payload.humanReview,
+    };
+  }
+
+  return null;
+}
+
+function getSubmitErrorMessage(payload: HumanReviewSubmitResponse) {
+  if ("ok" in payload) {
+    if (!payload.ok) {
+      return payload.error?.message ?? "人工审核提交失败";
+    }
+
+    return "人工审核提交失败";
+  }
+
+  return payload.message ?? "人工审核提交失败";
 }

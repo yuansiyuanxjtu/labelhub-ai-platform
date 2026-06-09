@@ -29,8 +29,15 @@ export async function resetDemoData(prisma: DemoPrisma) {
   await prisma.aiReview.deleteMany();
   await prisma.annotation.deleteMany();
   await prisma.sample.deleteMany();
+  await prisma.task.updateMany({
+    data: {
+      currentFormSchemaVersionId: null,
+    },
+  });
+  await prisma.formSchemaVersion.deleteMany();
   await prisma.task.deleteMany();
   await prisma.project.deleteMany();
+  await prisma.auditLog.deleteMany();
   await prisma.user.deleteMany();
 
   const [owner, annotatorA, annotatorB, reviewer] = await Promise.all([

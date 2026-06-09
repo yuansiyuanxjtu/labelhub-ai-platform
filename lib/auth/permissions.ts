@@ -44,3 +44,17 @@ const rules: RuleMap = {
 export function can(role: AppRole, action: AppAction) {
   return rules[role].has(action);
 }
+
+export const roleLabelMap = {
+  ADMIN: "管理员",
+  TASK_OWNER: "任务负责人",
+  ANNOTATOR: "标注员",
+  REVIEWER: "审核员",
+} as const satisfies Record<AppRole, string>;
+
+export const roleShortLabelMap = {
+  ADMIN: "ADMIN",
+  TASK_OWNER: "OWNER",
+  ANNOTATOR: "ANNOTATOR",
+  REVIEWER: "REVIEWER",
+} as const satisfies Record<AppRole, string>;

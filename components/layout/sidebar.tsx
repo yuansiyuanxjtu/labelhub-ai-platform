@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import {
   BarChart3,
   ClipboardCheck,
@@ -15,7 +14,8 @@ import {
   Tags,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { can, type AppRole, type AppAction } from "@/lib/auth/permissions";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { can, type AppAction } from "@/lib/auth/permissions";
 
 const navItems = [
   { href: "/dashboard", label: "工作台", icon: LayoutDashboard, action: null },
@@ -29,18 +29,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [role, setRole] = useState<AppRole>("ADMIN");
-
-  useEffect(() => {
-    void fetch("/api/auth/me", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((data: { user?: { role?: AppRole } }) => {
-        if (data.user?.role) {
-          setRole(data.user.role);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const { role } = useCurrentUser();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-card lg:block">
@@ -57,9 +46,7 @@ export function Sidebar() {
         {navItems
           .filter((item) => (item.action ? can(role, item.action) : true))
           .map((item) => {
-          const active =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const active = isNavItemActive(item.href, pathname);
           const Icon = item.icon;
 
           return (
@@ -90,4 +77,25 @@ export function Sidebar() {
       </div>
     </aside>
   );
+}
+
+function isNavItemActive(href: string, pathname: string) {
+  const normalizedPathname = normalizePath(pathname);
+
+  if (href === "/tasks") {
+    return (
+      normalizedPathname === "/tasks" ||
+      /^\/tasks\/(?!new$)[^/]+$/.test(normalizedPathname)
+    );
+  }
+
+  return normalizedPathname === href;
+}
+
+function normalizePath(pathname: string) {
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    return pathname.slice(0, -1);
+  }
+
+  return pathname;
 }
